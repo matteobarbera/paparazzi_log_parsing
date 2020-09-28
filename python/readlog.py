@@ -1,10 +1,9 @@
-import numpy as np
-
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 import pdb
 from io import StringIO
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 class rotorcraft_fp_class:
     """Rotorcraft Class"""
@@ -462,7 +461,7 @@ if __name__ == "__main__":
     #filename = '16_08_02_Heemskerk/16_08_02__15_13_52.data'
     #filename = '16_04_11_monday/16_04_11__18_24_17.data'
     #filename = '16_08_01 Kalmthout auto2\sd_kaart/16_08_01__22_33_34_SD_no_GPS.data'
-    filename = '15_08_05__10_37_24.data'
+    filename = '20_03_04__15_53_09_SD.data'
 
     p = plot_log_file(filename,1)
 
