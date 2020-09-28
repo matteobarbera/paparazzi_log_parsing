@@ -1,4 +1,4 @@
-from functools import wraps
+from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -98,28 +98,12 @@ def main_plot(filename):
     plt.legend()
 
 
-def savefig_decorator(fname):
-
-    def decorator(func):
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            plt.rcParams.update({'font.size': 16})
-            func(*args, **kwargs)
-            fig = plt.gcf()
-            fig.set_size_inches((20, 14), forward=False)
-            fig.tight_layout()
-            fig.subplots_adjust(top=0.95)
-
-            plt.savefig(f"{fname}_Spin{kwargs['num']}.png", bbox_inches='tight', transparent=True, dpi=300)
-
-        return wrapper
-
-    return decorator
-
-
 # @savefig_decorator("Test2")
 def plot_spin(filename: str, interval: tuple, num: int = 0):
+    # =====================================
+    # Only use to save the figs
+    # =====================================
+
     log_data = parselog(filename)
     ac_data = log_data.aircrafts[0].data
 
@@ -224,6 +208,161 @@ def plot_spin(filename: str, interval: tuple, num: int = 0):
     axs[3, 1].grid(which='both')
 
 
+def plot_spins(filename: str, intervals: List[tuple]):
+    spin_data = extract_spin_data(filename, intervals)
+    for num, ac_data in enumerate(spin_data):
+        fig, axs = plt.subplots(4, 2)
+        fig.canvas.set_window_title(f"Spin {num + 1}")
+        fig.suptitle(f"Spin {num + 1}")
+
+        act_t = ac_data["ACTUATORS"]["timestamp"]
+        # act_v = ac_data.ACTUATORS.values[:, :4]
+        act_0 = ac_data["ACTUATORS"]["values"][:, 0]
+        act_1 = ac_data["ACTUATORS"]["values"][:, 1]
+        act_2 = (ac_data["ACTUATORS"]["values"][:, 2] + 40)  # add trim
+        act_3 = ac_data["ACTUATORS"]["values"][:, 3]
+
+        defl_spikes_up = np.where(act_2 > 1730)
+        defl_spikes_down = np.where(act_2 < 1001)
+
+        # plt.figure(f"Actuators - S: {num}")
+        # plt.subplot(422)
+        axs[0, 0].plot(act_t, act_0, label="thr l")
+        axs[0, 0].plot(act_t, act_1, label="ele l")
+        axs[0, 0].plot(act_t, act_2, label="ele r")
+        axs[0, 0].plot(act_t, act_3, label="thr r")
+        axs[0, 0].set(xlabel="Time [s]", ylabel="PWM Value")
+        axs[0, 0].legend(loc=1)
+        axs[0, 0].grid(which='both')
+
+        gt, _, gp_alt, _, gq_alt, _, gr_alt = ac_data["IMU_GYRO"].values()
+
+        axs[1, 0].vlines(act_t[defl_spikes_up], -1000, 1000)
+        axs[1, 0].vlines(act_t[defl_spikes_down], -1000, 1000, color='r')
+
+        axs[1, 0].plot(gt, gp_alt, label='gp')
+        axs[1, 0].plot(gt, gq_alt, label='gq')
+        axs[1, 0].plot(gt, gr_alt, label='gr')
+        axs[1, 0].set(xlabel="Time [s]", ylabel="Rotation [deg/s]")
+        axs[1, 0].legend(loc=1)
+        axs[1, 0].grid(which='both')
+
+        gps_t = ac_data["GPS"]["timestamp"]
+        gps_cl = ac_data["GPS"]["climb"] * 0.01  # to m/s
+        gps_alt = ac_data["GPS"]["alt"] * 0.001  # to m
+        gps_spd = ac_data["GPS"]["speed"] * 0.01  # to m/s
+        axs[2, 0].plot(gps_t, gps_cl)
+        axs[2, 0].set(xlabel="Time [s]", ylabel="Climb rate [m/s]")
+        axs[2, 0].grid(which='both')
+
+        axs[3, 0].plot(gps_t, gps_alt)
+        axs[3, 0].set(xlabel="Time [s]", ylabel="Altitude [m]")
+        axs[3, 0].grid(which='both')
+
+        axs[0, 1].plot(gps_t, gps_spd)
+        axs[0, 1].set(xlabel="Time [s]", ylabel="2D Speed [m/s]")
+        axs[0, 1].grid(which='both')
+
+        imu_t, imu_ax, imu_ay, imu_az = ac_data["IMU_ACCEL"].values()
+        axs[1, 1].plot(imu_t, imu_ax, label='ax')
+        axs[1, 1].plot(imu_t, imu_ay, label='ay')
+        axs[1, 1].plot(imu_t, imu_az, label='az')
+        axs[1, 1].set(xlabel="Time [s]", ylabel="Acceleration [m/s^2]")
+        axs[1, 1].legend()
+        axs[1, 1].grid(which='both')
+
+        att_t = ac_data["ATTITUDE"]["timestamp"]
+        att_phi = ac_data["ATTITUDE"]["phi"]
+        att_theta = ac_data["ATTITUDE"]["theta"]
+        att_psi = ac_data["ATTITUDE"]["psi"]
+
+        axs[2, 1].vlines(act_t[defl_spikes_up], -180, 180)
+        axs[2, 1].vlines(act_t[defl_spikes_down], -180, 180, color='r')
+
+        axs[2, 1].plot(att_t, np.rad2deg(att_phi), label="phi")
+        axs[2, 1].plot(att_t, np.rad2deg(att_theta), label="theta")
+        axs[2, 1].plot(att_t, np.rad2deg(att_psi), label="psi")
+        # plt.plot(att_t, np.rad2deg(att_psi), label="psi")
+        axs[2, 1].set(xlabel="Time [s]", ylabel="Angle [deg]")
+        axs[2, 1].legend()
+        axs[2, 1].grid(which='both')
+
+        rc_t = ac_data["RC"]["timestamp"]
+        rc_thr = ac_data["RC"]["values"][:, 0]
+        rc_roll = ac_data["RC"]["values"][:, 1]
+        rc_pitch = ac_data["RC"]["values"][:, 2]
+        rc_yaw = ac_data["RC"]["values"][:, 3]
+        rc_aux2 = ac_data["RC"]["values"][:, 6]
+        axs[3, 1].plot(rc_t, rc_thr, label="thr")
+        axs[3, 1].plot(rc_t, rc_roll, label="roll")
+        axs[3, 1].plot(rc_t, rc_pitch, label="pitch")
+        axs[3, 1].plot(rc_t, rc_yaw, label="yaw")
+        axs[3, 1].plot(rc_t, rc_aux2, label="aux2")
+        axs[3, 1].set(xlabel="Time [s]", ylabel="Channel value")
+        axs[3, 1].legend()
+        axs[3, 1].grid(which='both')
+
+
+def plot_gq_gp_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
+    spin_data = extract_spin_data(filename, intervals)
+
+    spin1 = spin_data[0]
+    # data logged at different frequencies!!
+    # print(len(spin1["IMU_GYRO"]["timestamp"]) % len(spin1["ATTITUDE"]["timestamp"]))
+    # print(len(spin1["IMU_GYRO"]["timestamp"][1:-1]) / len(spin1["ATTITUDE"]["timestamp"]))
+    # print(len(spin1["IMU_GYRO"]["timestamp"][2::3]) == len(spin1["ATTITUDE"]["timestamp"]))
+    #
+    # print(spin1["IMU_GYRO"]["timestamp"][2:-1:3][:10])
+    # print(spin1["ATTITUDE"]["timestamp"][:10])
+    #
+    # print(spin1["IMU_GYRO"]["timestamp"][2::3][-10:])
+    # print(spin1["ATTITUDE"]["timestamp"][-10:])
+
+    offset = len(spin1["IMU_GYRO"]["timestamp"]) % len(spin1["ATTITUDE"]["timestamp"])
+    stride = len(spin1["IMU_GYRO"]["timestamp"]) // len(spin1["ATTITUDE"]["timestamp"])
+
+    # TODO add check to make sure arrays match
+
+    # _, _, gp_alt, _, gq_alt, _, _ = spin1["IMU_GYRO"].values()
+    # psi = np.rad2deg(spin1["ATTITUDE"]["psi"])
+    # plt.figure()
+    # # plt.plot(psi, gp_alt[offset::stride], label='gp', ls="None", marker="x", markevery=1)
+    # plt.plot(psi, gq_alt[offset::stride], label='gq', ls="None", marker="x", markevery=1)
+    # plt.legend()
+
+    fig, axs = plt.subplots(2, 1)
+    fig.canvas.set_window_title(fig_name)
+    linestyle = {'ls': '--', 'marker': 'o', 'markevery': 1}
+    for spin in spin_data:
+        # sampled at different rates
+        _, _, gp_alt, _, gq_alt, _, _ = spin["IMU_GYRO"].values()
+        gq_alt_reduced = gp_alt[offset::stride]
+        gp_alt_reduced = gq_alt[offset::stride]
+        psi = np.rad2deg(spin["ATTITUDE"]["psi"])
+
+        # make sure lengths match
+        if len(psi) < len(gp_alt_reduced):
+            gp_alt_reduced = gp_alt_reduced[:-1]
+            gq_alt_reduced = gq_alt_reduced[:-1]
+        elif len(psi) < len(gp_alt_reduced):
+            psi = psi[:-1]
+
+        # sort arrays
+        sort_mask = psi.argsort()
+        psi_sorted = psi[sort_mask]
+        gp_sorted = gp_alt_reduced[sort_mask]
+        gq_sorted = gq_alt_reduced[sort_mask]
+
+        # plot arrays
+        axs[0].plot(psi_sorted, gp_sorted, label='gq', **linestyle)
+        axs[1].plot(psi_sorted, gq_sorted, label='gp', **linestyle)
+
+    axs[0].legend()
+    axs[0].set_title('gq')
+    axs[1].legend()
+    axs[1].set_title('gp')
+
+
 if __name__ == "__main__":
     path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs//16-9//decoded//"
     # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log",
@@ -260,5 +399,17 @@ if __name__ == "__main__":
     # for i in range(len(fr_0004_spins)):
     #     plot_spin(path_to_logs + logs["fr_0004"], fr_0004_spins[i], num=1+i)
 
-    extract_spin_data(path_to_logs + logs["fr_0004"], fr_0004_spins)
+    # ========= Spin analysis 16-9 ===============
+    fr_0004_spins = [(905, 928)]
+
+    # Stable spin portion (spin 1)
+    fr_0004_spins_red1 = [(916.17, 916.52), (916.53, 916.86), (916.86, 917.2), (917.19, 917.57), (917.54, 917.9)]
+    # Elevon right cyclic deflection (spin 1)
+    fr_0004_spins_red2 = [(920.74, 921.17), (921.17, 921.5), (921.5, 921.835), (921.835, 922.17), (922.17, 922.5), (922.5, 922.82)]
+
+    plot_spins(path_to_logs + logs["fr_0004"], fr_0004_spins)
+
+    plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red1, fig_name="Stable S1")
+    plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red2, fig_name="ELE R S1")
+
     plt.show()
