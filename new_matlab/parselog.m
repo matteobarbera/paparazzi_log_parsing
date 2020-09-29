@@ -18,12 +18,18 @@ if nargin < 2
     else
         warning('Parsing log file with only the .data file, which could lead to unexpected message fields.')
         msgs = messages();
+        disp(msgs);
+        pause
     end
 end
 s.msgs = msgs;
 
 % Read everything as timestamp, A/C ID, msg name and msg contents
 fid = fopen(filename);
+fid = fopen('20_03_04__15_53_09_SD.data')
+if fid == -1
+  error('Author:Function:OpenFile', 'Cannot open file: %s', fl{iFile});
+end
 C = textscan(fid, '%f %u %s %[^\n]');
 timestamp = C{1};
 aircraftID = C{2};

@@ -303,97 +303,6 @@ def plot_spins(filename: str, intervals: List[tuple]):
         axs[3, 1].grid(which='both')
 
 
-def plot_gq_gp_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
-    spin_data = extract_spin_data(filename, intervals)
-
-    # spin1 = spin_data[0]
-    # data logged at different frequencies!!
-    # print(len(spin1["IMU_GYRO"]["timestamp"]) % len(spin1["ATTITUDE"]["timestamp"]))
-    # print(len(spin1["IMU_GYRO"]["timestamp"][1:-1]) / len(spin1["ATTITUDE"]["timestamp"]))
-    # print(len(spin1["IMU_GYRO"]["timestamp"][2::3]) == len(spin1["ATTITUDE"]["timestamp"]))
-    #
-    # print(spin1["IMU_GYRO"]["timestamp"][2:-1:3][:10])
-    # print(spin1["ATTITUDE"]["timestamp"][:10])
-    #
-    # print(spin1["IMU_GYRO"]["timestamp"][2::3][-10:])
-    # print(spin1["ATTITUDE"]["timestamp"][-10:])
-
-    offset = len(spin_data[0]["IMU_GYRO"]["timestamp"]) % len(spin_data[0]["ATTITUDE"]["timestamp"])
-    stride = len(spin_data[0]["IMU_GYRO"]["timestamp"]) // len(spin_data[0]["ATTITUDE"]["timestamp"])
-
-    # TODO add check to make sure arrays match
-
-    # _, _, gp_alt, _, gq_alt, _, _ = spin1["IMU_GYRO"].values()
-    # psi = np.rad2deg(spin1["ATTITUDE"]["psi"])
-    # plt.figure()
-    # # plt.plot(psi, gp_alt[offset::stride], label='gp', ls="None", marker="x", markevery=1)
-    # plt.plot(psi, gq_alt[offset::stride], label='gq', ls="None", marker="x", markevery=1)
-    # plt.legend()
-
-    fig, axs = plt.subplots(3, 1)
-    fig.canvas.set_window_title(fig_name)
-    linestyle = {'ls': '--', 'marker': 'o', 'markevery': 1}
-    linestyle2 = {'ls': 'None', 'marker': 'x', 'markevery': 1}
-    for i, spin in enumerate(spin_data):
-        # sampled at different rates
-        _, _, gp_alt, _, gq_alt, _, _ = spin["IMU_GYRO"].values()
-        gq_alt_reduced = gp_alt[offset::stride]
-        gp_alt_reduced = gq_alt[offset::stride]
-        psi = np.rad2deg(spin["ATTITUDE"]["psi"])
-
-        # make sure lengths match
-        if len(psi) < len(gp_alt_reduced):
-            gp_alt_reduced = gp_alt_reduced[:-1]
-            gq_alt_reduced = gq_alt_reduced[:-1]
-        elif len(psi) < len(gp_alt_reduced):
-            psi = psi[:-1]
-
-        # sort arrays
-        sort_mask = psi.argsort()
-        psi_sorted = psi[sort_mask]
-        gp_sorted = gp_alt_reduced[sort_mask]
-        gq_sorted = gq_alt_reduced[sort_mask]
-
-        # plot arrays
-        axs[0].plot(psi_sorted, gp_sorted, label=f'rev {i + 1}', **linestyle)
-        axs[1].plot(psi_sorted, gq_sorted, label=f'rev {i + 1}', **linestyle)
-        axs[2].plot(gp_alt, gq_alt, label=f'rev {i + 1}', **linestyle2)
-    axs[0].legend()
-    axs[0].set_title('gq')
-    axs[1].legend()
-    axs[1].set_title('gp')
-    axs[2].legend()
-    axs[2].set_xlabel('gp')
-    axs[2].set_ylabel('gq')
-
-
-def plot_xy_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
-    spin_data = extract_spin_data(filename, intervals)
-
-    plt.figure(fig_name)
-    for i, spin in enumerate(spin_data):
-        phi = np.squeeze(spin["ATTITUDE"]["phi"])
-        theta = np.squeeze(spin["ATTITUDE"]["theta"])
-        psi = np.squeeze(spin["ATTITUDE"]["psi"])
-
-        ref_z = -1  # vec in body frame -> [0, 0, ref_z]
-        earth_pos = ref_z * z_frame_transformation(phi, theta, psi)
-        earth_pos = np.squeeze(earth_pos)  # remove single dimensional axis
-
-        plt.plot(earth_pos[0, :], earth_pos[1, :], label=f"rev {i + 1}")
-    plt.legend()
-    plt.xlabel("x")
-    plt.ylabel("y")
-
-
-def z_frame_transformation(phi: np.ndarray, theta: np.ndarray, psi: np.ndarray):
-    # From Flight Dynamics Reader
-    t_vec = np.array([[np.cos(phi) * np.sin(theta) * np.cos(psi) + np.sin(phi) * np.sin(psi)],
-                      [np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi)],
-                      [np.cos(phi) * np.cos(theta)]])
-    return t_vec
-
-
 if __name__ == "__main__":
     path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs//16-9//decoded//"
     # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log",
@@ -416,28 +325,6 @@ if __name__ == "__main__":
     # for i in range(len(fr_0004_spins)):
     #     plot_spin(path_to_logs + logs["fr_0004"], fr_0004_spins[i], num=1+i)
 
-    # ========= Spin analysis 16-9 ===============
-    fr_0004_spins = [(905, 928)]
-
-    # Stable spin portion (spin 1)
-    fr_0004_spins_red1 = [(916.17, 916.52), (916.53, 916.86), (916.86, 917.2), (917.19, 917.57), (917.54, 917.9)]
-    # Elevon right cyclic deflection (spin 1)
-    fr_0004_spins_red2 = [(920.74, 921.17), (921.17, 921.5), (921.5, 921.835), (921.835, 922.17), (922.17, 922.5), (922.5, 922.82)]
-
     # plot_spins(path_to_logs + logs["fr_0004"], fr_0004_spins)
-    #
-    # for i in range(len(fr_0004_spins_red1)):
-    #     intervals = fr_0004_spins_red1[:i+1]
-    #     plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], intervals, fig_name="Stable S1")
-    #
-    # for i in range(len(fr_0004_spins_red2)):
-    #     intervals = fr_0004_spins_red2[:i+1]
-    #     plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], intervals, fig_name="ELE R S1")
-
-    plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red1, fig_name="Stable S1")
-    plot_gq_gp_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red2, fig_name="ELE R S1")
-
-    plot_xy_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red1, fig_name="Stable S1")
-    plot_xy_vs_psi(path_to_logs + logs["fr_0004"], fr_0004_spins_red2, fig_name="ELE R S1")
 
     plt.show()

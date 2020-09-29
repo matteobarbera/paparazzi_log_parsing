@@ -3,6 +3,7 @@ function s = messages(filename)
 
 % General variables
 paparazzi_home = getenv('PAPARAZZI_HOME');
+paparazzi_home = '/home/matteo/paparazzi';
 
 % When no filename is given
 if nargin < 1 || isempty(filename)

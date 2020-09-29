@@ -1,23 +1,24 @@
 clear all
 close all
 
-p = parselog('../flight_logs_ship/80_01_09__01_55_10_SD.data');
+p = parselog('20_03_04__15_53_09_SD.data');
 ac_data = p.aircrafts.data;
-
+msgs = p.msgs
+disp(ac_data);
 % Get the important time areas
-ap_in_flight = ac_data.ROTORCRAFT_STATUS.timestamp(find(diff(int32(ac_data.ROTORCRAFT_STATUS.ap_in_flight))));
-ap_motors_on = ac_data.ROTORCRAFT_STATUS.timestamp(find(diff(int32(ac_data.ROTORCRAFT_STATUS.ap_motors_on))));
+% ap_in_flight = ac_data.FBW_STATUS.timestamp(find(diff(int32(ac_data.FBW_STATUS.ap_in_flight))));
+ap_motors_on = ac_data.FBW_STATUS.timestamp(find(diff(int32(ac_data.FBW_STATUS.ap_motors_on))));
 
 % Plot the Rotorcraft Status
 figure(1);
 subplot(2,1,1);
-area(ac_data.ROTORCRAFT_STATUS.timestamp, [ac_data.ROTORCRAFT_STATUS.ap_in_flight, ac_data.ROTORCRAFT_STATUS.ap_motors_on]);
+area(ac_data.FBW_STATUS.timestamp, [ac_data.FBW_STATUS.ap_in_flight, ac_data.FBW_STATUS.ap_motors_on]);
 title('Rotorcraft Status');
 xlabel('Time [s]');
 legend('In flight', 'Motors on');
 
 subplot(2,1,2);
-plot(ac_data.ROTORCRAFT_STATUS.timestamp, [ac_data.ROTORCRAFT_STATUS.ap_mode, ac_data.ROTORCRAFT_STATUS.arming_status]);
+plot(ac_data.FBW_STATUS.timestamp, [ac_data.FBW_STATUS.ap_mode, ac_data.FBW_STATUS.arming_status]);
 title('Rotorcraft Status');
 xlabel('Time [s]');
 legend('Flight mode', 'Arming status');
@@ -25,10 +26,10 @@ sgtitle('Status')
 
 
 % Plot the Rotorcraft FP
-if isfield(ac_data, 'ROTORCRAFT_FP')
+if isfield(ac_data, 'FBW_FP')
     figure(2);
     ax1 = subplot(3,1,1);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [ac_data.ROTORCRAFT_FP.psi_alt, ac_data.ROTORCRAFT_FP.carrot_psi_alt]);
+    plot(ac_data.FBW_FP.timestamp, [ac_data.FBW_FP.psi_alt, ac_data.FBW_FP.carrot_psi_alt]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Heading target');
@@ -36,7 +37,7 @@ if isfield(ac_data, 'ROTORCRAFT_FP')
     legend('Measured psi [deg]', 'Target psi [deg]');
 
     ax2 = subplot(3,1,2);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [ac_data.ROTORCRAFT_FP.phi_alt, ac_data.ROTORCRAFT_FP.theta_alt, ac_data.ROTORCRAFT_FP.psi_alt]);
+    plot(ac_data.FBW_FP.timestamp, [ac_data.FBW_FP.phi_alt, ac_data.FBW_FP.theta_alt, ac_data.FBW_FP.psi_alt]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Angles');
@@ -44,7 +45,7 @@ if isfield(ac_data, 'ROTORCRAFT_FP')
     legend('Phi [deg]', 'Theta [deg]', 'Psi [deg]');
 
     ax3 = subplot(3,1,3);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [sqrt(ac_data.ROTORCRAFT_FP.veast_alt.^2.+ac_data.ROTORCRAFT_FP.vnorth_alt.^2), ac_data.ROTORCRAFT_FP.veast_alt, ac_data.ROTORCRAFT_FP.vnorth_alt, ac_data.ROTORCRAFT_FP.vup_alt]);
+    plot(ac_data.FBW_FP.timestamp, [sqrt(ac_data.FBW_FP.veast_alt.^2.+ac_data.FBW_FP.vnorth_alt.^2), ac_data.FBW_FP.veast_alt, ac_data.FBW_FP.vnorth_alt, ac_data.FBW_FP.vup_alt]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Speeds');
@@ -208,10 +209,10 @@ if isfield(ac_data, 'INS_EKF2')
 end
 
 % Plot the Altitude/Height information
-if isfield(ac_data, 'ROTORCRAFT_FP')
+if isfield(ac_data, 'FBW_FP')
     figure(8);
     ax1 = subplot(2,1,1);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [ac_data.ROTORCRAFT_FP.carrot_up_alt, ac_data.ROTORCRAFT_FP.up_alt]);
+    plot(ac_data.FBW_FP.timestamp, [ac_data.FBW_FP.carrot_up_alt, ac_data.FBW_FP.up_alt]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Height');
@@ -219,7 +220,7 @@ if isfield(ac_data, 'ROTORCRAFT_FP')
     legend('Carrot up', 'Up');
     
     ax2 = subplot(2,1,2);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [ac_data.ROTORCRAFT_FP.thrust]);
+    plot(ac_data.FBW_FP.timestamp, [ac_data.FBW_FP.thrust]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Thurst');
@@ -244,7 +245,7 @@ if isfield(ac_data, 'HOVER_LOOP')
     legend('X-err', 'Y-err');
     
     ax2 = subplot(2,1,2);
-    plot(ac_data.ROTORCRAFT_FP.timestamp, [ac_data.ROTORCRAFT_FP.thrust]);
+    plot(ac_data.FBW_FP.timestamp, [ac_data.FBW_FP.thrust]);
     hold on;
     plot([ap_motors_on'; ap_motors_on'], repmat(ylim',1,size(ap_motors_on,1)), '--r')
     title('Thurst');
