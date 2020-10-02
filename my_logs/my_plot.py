@@ -209,7 +209,7 @@ def plot_spin(filename: str, interval: tuple, num: int = 0):
 
 
 def plot_spins(filename: str, intervals: List[tuple]):
-    spin_data = extract_spin_data(filename, intervals)
+    spin_data = extract_spin_data(filename, intervals, single_revs=False)
     for num, ac_data in enumerate(spin_data):
         fig, axs = plt.subplots(4, 2)
         fig.canvas.set_window_title(f"Spin {num + 1}")
