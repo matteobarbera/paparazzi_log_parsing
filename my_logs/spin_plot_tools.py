@@ -1,6 +1,5 @@
 import copy
 from functools import wraps
-from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -8,14 +7,19 @@ from matplotlib import pyplot as plt
 from parselog import parselog
 
 
-def extract_spin_data(filename: str, intervals: List[tuple]):
+def extract_spin_data(filename: str, interval: tuple, single_revs=True):
     log_data = parselog(filename)
     ac_data = log_data.aircrafts[0].data
 
+    if single_revs:
+        rev_intervals = get_rev_intervals(filename, *interval)
+    else:
+        rev_intervals = interval
+
     data = []
-    for spin_n, interval in enumerate(intervals):
+    for spin_n, t in enumerate(rev_intervals):
         tmp = copy.deepcopy(ac_data)
-        s_start, s_end = interval
+        s_start, s_end = t
         for data_field in ac_data.keys():
             if 'timestamp' in ac_data[data_field].keys():
                 mask = (ac_data[data_field].timestamp > s_start) & (ac_data[data_field].timestamp < s_end)
@@ -58,8 +62,11 @@ def savefig_decorator(fname):
     return decorator
 
 
-def plot_gq_gp_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
-    spin_data = extract_spin_data(filename, intervals)
+def plot_gq_gp_vs_psi(filename: str, interval: tuple, *, max_spins: int = 6, fig_name=None):
+    spin_data = extract_spin_data(filename, interval)
+
+    if len(spin_data) > max_spins:
+        spin_data = spin_data[:max_spins]
 
     # spin1 = spin_data[0]
     # data logged at different frequencies!!
@@ -104,15 +111,9 @@ def plot_gq_gp_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
         elif len(psi) < len(gp_alt_reduced):
             psi = psi[:-1]
 
-        # sort arrays
-        sort_mask = psi.argsort()
-        psi_sorted = psi[sort_mask]
-        gp_sorted = gp_alt_reduced[sort_mask]
-        gq_sorted = gq_alt_reduced[sort_mask]
-
         # plot arrays
-        axs[0].plot(psi_sorted, gp_sorted, label=f'rev {i + 1}', **linestyle)
-        axs[1].plot(psi_sorted, gq_sorted, label=f'rev {i + 1}', **linestyle)
+        axs[0].plot(psi, gq_alt_reduced, label=f'rev {i + 1}', **linestyle)
+        axs[1].plot(psi, gp_alt_reduced, label=f'rev {i + 1}', **linestyle)
         axs[2].plot(gp_alt, gq_alt, label=f'rev {i + 1}', **linestyle2)
     axs[0].legend()
     axs[0].set_title('gq')
@@ -123,10 +124,14 @@ def plot_gq_gp_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
     axs[2].set_ylabel('gq')
 
 
-def plot_xy_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
-    spin_data = extract_spin_data(filename, intervals)
+def plot_xy_vs_psi(filename: str, interval: tuple, *, max_spins: int = 6, fig_name=None):
+    spin_data = extract_spin_data(filename, interval)
 
-    plt.figure(fig_name)
+    if len(spin_data) > max_spins:
+        spin_data = spin_data[:max_spins]
+
+    fig, axs = plt.subplots(3, 1)
+    fig.canvas.set_window_title(fig_name)
     for i, spin in enumerate(spin_data):
         phi = np.squeeze(spin["ATTITUDE"]["phi"])
         theta = np.squeeze(spin["ATTITUDE"]["theta"])
@@ -136,10 +141,14 @@ def plot_xy_vs_psi(filename: str, intervals: List[tuple], fig_name=None):
         earth_pos = ref_z * z_frame_transformation(phi, theta, psi)
         earth_pos = np.squeeze(earth_pos)  # remove single dimensional axis
 
-        plt.plot(earth_pos[0, :], earth_pos[1, :], label=f"rev {i + 1}")
-    plt.legend()
-    plt.xlabel("x")
-    plt.ylabel("y")
+        axs[0].plot(earth_pos[0, :], earth_pos[1, :], label=f"rev {i + 1}")
+        axs[1].plot(psi, phi, label="phi")
+        axs[2].plot(psi, theta, label="theta")
+    axs[0].legend()
+    axs[0].set_xlabel("x")
+    axs[0].set_ylabel("y")
+    axs[1].legend()
+    axs[2].legend()
 
 
 def z_frame_transformation(phi: np.ndarray, theta: np.ndarray, psi: np.ndarray):
@@ -148,3 +157,21 @@ def z_frame_transformation(phi: np.ndarray, theta: np.ndarray, psi: np.ndarray):
                       [np.cos(phi) * np.sin(theta) * np.sin(psi) - np.sin(phi) * np.cos(psi)],
                       [np.cos(phi) * np.cos(theta)]])
     return t_vec
+
+
+def get_rev_intervals(filename: str, start_t: float, end_t: float):
+    log_data = parselog(filename)
+    ac_data = log_data.aircrafts[0].data
+
+    interval_mask = (ac_data["ATTITUDE"]["timestamp"] > start_t) & (ac_data["ATTITUDE"]["timestamp"] < end_t)
+    att_t = ac_data["ATTITUDE"]["timestamp"][interval_mask]
+    att_psi = ac_data["ATTITUDE"]["psi"][interval_mask]
+
+    sign_psi = np.sign(att_psi)
+    zero_crossing = ((np.roll(sign_psi, 1) - sign_psi) != 0).astype(bool)
+    zero_crossing[0] = 0  # if beginning/end of array has different sign it will detect a sign change at idx 0
+    rev_crossing = np.where(np.abs(att_psi[zero_crossing]) > 1.5)  # ignore sign change occurring at half revolution
+
+    # return revolution intervals in tuple format
+    rev_times = att_t[zero_crossing][rev_crossing]
+    return zip(rev_times[:-1], rev_times[1:])
