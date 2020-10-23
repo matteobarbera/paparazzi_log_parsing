@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from parselog import parselog
-from spin_plot_tools import extract_spin_data
+from spin_plot_tools import extract_spin_data, savefig_decorator
 
 
 def main_plot(filename):

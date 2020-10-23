@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 
-from my_plot import plot_spin
+from my_plot import plot_spin, plot_spins
 from spin_plot_tools import plot_spin_analysis
 
 if __name__ == "__main__":
