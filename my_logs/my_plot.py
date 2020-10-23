@@ -98,8 +98,8 @@ def main_plot(filename):
     plt.legend()
 
 
-# @savefig_decorator("Test2")
-def plot_spin(filename: str, interval: tuple, num: int = 0):
+@savefig_decorator()
+def plot_spin(filename: str, interval: tuple, fig_name=''):
     # =====================================
     # Only use to save the figs
     # =====================================
@@ -110,8 +110,8 @@ def plot_spin(filename: str, interval: tuple, num: int = 0):
     s_start, s_end = interval
 
     fig, axs = plt.subplots(4, 2)
-    fig.canvas.set_window_title(f"Spin {num}")
-    fig.suptitle(f"Spin {num}")
+    fig.canvas.set_window_title(fig_name)
+    # fig.suptitle(fig_name)
 
     act_t = ac_data.ACTUATORS.timestamp
     # act_v = ac_data.ACTUATORS.values[:, :4]
@@ -132,20 +132,20 @@ def plot_spin(filename: str, interval: tuple, num: int = 0):
     axs[0, 0].plot(act_t[act_mask], act_2[act_mask], label="ele r")
     axs[0, 0].plot(act_t[act_mask], act_3[act_mask], label="thr r")
     axs[0, 0].set(xlabel="Time [s]", ylabel="PWM Value")
-    axs[0, 0].legend(loc=1)
+    axs[0, 0].legend()
     axs[0, 0].grid(which='both')
 
     gt, _, gp_alt, _, gq_alt, _, gr_alt = ac_data.IMU_GYRO.values()
     gyro_mask = (gt > s_start) & (gt < s_end)
 
-    axs[1, 0].vlines(act_t[act_mask][defl_spikes_up], -1000, 1000)
-    axs[1, 0].vlines(act_t[act_mask][defl_spikes_down], -1000, 1000, color='r')
+    # axs[1, 0].vlines(act_t[act_mask][defl_spikes_up], -1000, 1000)
+    # axs[1, 0].vlines(act_t[act_mask][defl_spikes_down], -1000, 1000, color='r')
 
     axs[1, 0].plot(gt[gyro_mask], gp_alt[gyro_mask], label='gp')
     axs[1, 0].plot(gt[gyro_mask], gq_alt[gyro_mask], label='gq')
     axs[1, 0].plot(gt[gyro_mask], gr_alt[gyro_mask], label='gr')
     axs[1, 0].set(xlabel="Time [s]", ylabel="Rotation [deg/s]")
-    axs[1, 0].legend(loc=1)
+    axs[1, 0].legend()
     axs[1, 0].grid(which='both')
 
     gps_t = ac_data.GPS.timestamp
@@ -180,12 +180,12 @@ def plot_spin(filename: str, interval: tuple, num: int = 0):
     att_psi = ac_data.ATTITUDE.psi
     att_mask = (att_t > s_start) & (att_t < s_end)
 
-    axs[2, 1].vlines(act_t[act_mask][defl_spikes_up], -180, 180)
-    axs[2, 1].vlines(act_t[act_mask][defl_spikes_down], -180, 180, color='r')
+    # axs[2, 1].vlines(act_t[act_mask][defl_spikes_up], -180, 180)
+    # axs[2, 1].vlines(act_t[act_mask][defl_spikes_down], -180, 180, color='r')
 
     axs[2, 1].plot(att_t[att_mask], np.rad2deg(att_phi)[att_mask], label="phi")
     axs[2, 1].plot(att_t[att_mask], np.rad2deg(att_theta)[att_mask], label="theta")
-    axs[2, 1].plot(att_t[att_mask], np.rad2deg(att_psi)[att_mask], label="psi")
+    # axs[2, 1].plot(att_t[att_mask], np.rad2deg(att_psi)[att_mask], label="psi")
     # plt.plot(att_t[att_mask], np.rad2deg(att_psi)[att_mask], label="psi")
     axs[2, 1].set(xlabel="Time [s]", ylabel="Angle [deg]")
     axs[2, 1].legend()
