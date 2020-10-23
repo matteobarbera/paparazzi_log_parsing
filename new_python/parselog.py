@@ -1,14 +1,15 @@
 import os
 import pickle
 import re
+from typing import Dict
 
 import numpy as np
 from bs4 import BeautifulSoup
 
-from messages import messages, AttrDict
+from messages import messages
 
 
-def parselog(filename: str, msg_xml: str = None) -> AttrDict:
+def parselog(filename: str, msg_xml: str = None) -> Dict:
     """
     Parse a data log extracting the fields based on a message.xml
 
@@ -34,7 +35,7 @@ def parselog(filename: str, msg_xml: str = None) -> AttrDict:
         else:
             msg_xml_ = splitlog(filename)
             # If message.xml is still None, try to find it from PAPARAZZI_HOME
-            if msg_xml_ is None:
+            if msg_xml_ == '':
                 msg_xml_ = os.getenv('PAPARAZZI_HOME') + '/var/messages.xml'
 
     msgs = messages(msg_xml_)
@@ -45,6 +46,7 @@ def parselog(filename: str, msg_xml: str = None) -> AttrDict:
     with open(fname + '.data') as f:
         for line in f:
             parsed_line = line.rstrip().split(maxsplit=3)
+            # Pad parsed_line to make the list uniform
             if len(parsed_line) != 4:
                 parsed_line += [''] * (4 - len(parsed_line))
             data.append(parsed_line)
@@ -66,9 +68,9 @@ def parselog(filename: str, msg_xml: str = None) -> AttrDict:
     unique_msg = np.unique(msg_name)
 
     # Extract the data for all unique aircraft separately
-    log_data = AttrDict()
-    log_data.msgs = msgs
-    log_data.aircrafts = [AttrDict()] * n_ac
+    log_data = dict()
+    log_data['msgs'] = msgs
+    log_data['aircrafts'] = [dict()] * n_ac
     for i in range(n_ac):
         # Filter only data relevant to the aircraft in question
         id_mask = aircraft_id == unique_ac[i]
@@ -76,43 +78,44 @@ def parselog(filename: str, msg_xml: str = None) -> AttrDict:
         if ap_version.size != 0:
             unique_ap_version = ap_version[ap_version[:, 1] == str(unique_ac[i])][0]
             version, desc = re.split(',| |, ', unique_ap_version[-1])
-            log_data.aircrafts[i].version = version
-            log_data.aircrafts[i].version_desc = desc
+            log_data['aircrafts'][i]['version'] = version
+            log_data['aircrafts'][i]['version_desc'] = desc
 
-        log_data.aircrafts[i].AC_ID = unique_ac[i]
-        log_data.aircrafts[i].data = parse_aircraft_data(msgs, unique_msg, timestamp[id_mask], msg_name[id_mask],
-                                                         msg_content[id_mask])
+        log_data['aircrafts'][i]['AC_ID'] = unique_ac[i]
+        log_data['aircrafts'][i]['data'] = parse_aircraft_data(msgs, unique_msg, timestamp[id_mask], msg_name[id_mask],
+                                                               msg_content[id_mask])
 
     with open(pckl_f, 'wb') as pf:
         pickle.dump(log_data, pf)
     return log_data
 
 
-def parse_aircraft_data(msgs: AttrDict, uniqueMsg: np.ndarray, timestamp: np.ndarray, msgName: np.ndarray,
-                        msgContent: np.ndarray) -> AttrDict:
-    ac_data = AttrDict()
+def parse_aircraft_data(msgs: Dict, unique_msg: np.ndarray, timestamp: np.ndarray, msg_name: np.ndarray,
+                        msg_content: np.ndarray) -> Dict:
+    ac_data = dict()
     msg_info = None
-    for msg in uniqueMsg:
+    delimeter_pattern = re.compile(r',| |, ')
+    for msg in unique_msg:
         # Check the message class of the message
-        ac_data[msg] = AttrDict()
-        if msg in msgs.telemetry.keys():
-            msg_info = msgs.telemetry[msg]
-        elif msg in msgs.ground.keys():
-            msg_info = msgs.ground[msg]
-        elif msg in msgs.datalink.keys():
-            msg_info = msgs.datalink[msg]
-        elif msg in msgs.alert.keys():
-            msg_info = msgs.alert[msg]
+        ac_data[msg] = dict()
+        if msg in msgs['telemetry'].keys():
+            msg_info = msgs['telemetry'][msg]
+        elif msg in msgs['ground'].keys():
+            msg_info = msgs['ground'][msg]
+        elif msg in msgs['datalink'].keys():
+            msg_info = msgs['datalink'][msg]
+        elif msg in msgs['alert'].keys():
+            msg_info = msgs['alert'][msg]
 
-        msg_fields = msg_info.field_names
-        msg_mask = msgName == msg  # Filter the message in question
+        msg_fields = msg_info['field_names']
+        msg_mask = msg_name == msg  # Filter the message in question
 
-        ac_data[msg].timestamp = timestamp[msg_mask]
+        ac_data[msg]['timestamp'] = timestamp[msg_mask]
         n_fields = len(msg_fields)
 
         # Only parse content if needed
         if n_fields > 0:
-            content_list = [re.split(',| |, ', x) for x in msgContent[msg_mask]]
+            content_list = [delimeter_pattern.split(x) for x in msg_content[msg_mask]]
             content = np.asarray(content_list, dtype=float)
 
             for i in range(n_fields):
@@ -121,9 +124,9 @@ def parse_aircraft_data(msgs: AttrDict, uniqueMsg: np.ndarray, timestamp: np.nda
                 ac_data[msg][field_name] = values
 
                 # Parse alternate unit
-                field_info = msg_info.fields[field_name]
-                if field_info.alt_unit_coef != 1:
-                    ac_data[msg][field_name + '_alt'] = values * field_info.alt_unit_coef
+                field_info = msg_info['fields'][field_name]
+                if field_info['alt_unit_coef'] != 1:
+                    ac_data[msg][field_name + '_alt'] = values * field_info['alt_unit_coef']
             else:
                 # If there isn't a field type per content column, dump all remaining message content
                 # into the last field. This usually occurs for array field type, e.g. int16[] (ACTUATORS)
@@ -131,8 +134,8 @@ def parse_aircraft_data(msgs: AttrDict, uniqueMsg: np.ndarray, timestamp: np.nda
                     values = content[:, i:]
                     ac_data[msg][field_name] = values
 
-                    if field_info.alt_unit_coef != 1:
-                        ac_data[msg][field_name + '_alt'] = values * field_info.alt_unit_coef
+                    if field_info['alt_unit_coef'] != 1:
+                        ac_data[msg][field_name + '_alt'] = values * field_info['alt_unit_coef']
     return ac_data
 
 
@@ -149,7 +152,7 @@ def splitlog(filename: str, gen_files: bool = False) -> str:
 
     if not os.path.isfile(log_filename):
         print(".log file not found! Cannot parse message.xml")
-        return
+        return ''
 
     with open(log_filename) as lf:
         soup = BeautifulSoup(lf, features='lxml')
