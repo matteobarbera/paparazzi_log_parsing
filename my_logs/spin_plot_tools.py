@@ -8,12 +8,22 @@ from parselog import parselog
 
 
 def extract_spin_data(filename: str, interval: tuple, *, single_revs=True, data_fields=None):
+    """
+    Extracts relevant spin data for the time interval specified
+
+    @param filename: file string
+    @param interval: tuple or list of tuples containing start_t and ent_t of time interval
+    @param single_revs: whether to extract data for individual revolutions
+    @param data_fields: only extract data from specified fields (list of dict keys of paparazzi log)
+    @return: list of dicts containing data of each 'run'
+    """
     log_data = parselog(filename)
     ac_data = log_data.aircrafts[0].data
 
     if single_revs:
         rev_intervals = get_rev_intervals(filename, *interval)
     else:
+        # Extract data for single 'run' or for multiple runs
         if type(interval) == tuple:
             rev_intervals = [interval]
         else:
@@ -264,6 +274,15 @@ def z_frame_transformation(phi: np.ndarray, theta: np.ndarray, psi: np.ndarray):
 
 
 def get_rev_intervals(filename: str, start_t: float, end_t: float, *, rec_run=False):
+    """
+    Calculates time intervals of individual revolutions for specified spin data time interval
+
+    @param filename: file string
+    @param start_t: time interval start
+    @param end_t: time interval end
+    @param rec_run: helper variable for recursive usage
+    @return: zip of interval times for each individual spin
+    """
     log_data = parselog(filename)
     ac_data = log_data.aircrafts[0].data
 
@@ -331,7 +350,8 @@ def plot_axis_projection(filename: str, interval: tuple, *, fig_name: str = ''):
     fig, axs = plt.subplots(1, 2)
     fig.canvas.set_window_title(fig_name + f" t: {interval}")
     axs[0].plot(rot_c[:, 0], rot_c[:, 1], label="rot_c", **linestyle)
-    axs[1].plot(z_c[:, 0], z_c[:, 1], label="z_c", **linestyle)
+    axs[1].plot(z_c[:, 0], z_c[:, 1], label="TPP proj", **linestyle)
+    axs[1].plot(z_c[0, 0], z_c[0, 1], label="start spin", marker='o', color='k')
     if len(rot_c_el) != 0:
         axs[0].scatter(rot_c_el[:, 0], rot_c_el[:, 1], label="elevons active", **linestyle2)
         axs[1].scatter(z_c_el[:, 0], z_c_el[:, 1], label="elevons active", **linestyle2)

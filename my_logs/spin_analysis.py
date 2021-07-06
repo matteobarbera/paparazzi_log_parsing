@@ -5,22 +5,24 @@ from spin_plot_tools import plot_spin_analysis
 
 if __name__ == "__main__":
     path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs"
-    # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log"}
+    # logs = {"fr_0009": "//23-6//decoded//20_06_30__14_59_00_SD.log",
+    # "fr_0015": "//23-6//decoded//20_06_30__16_49_48_SD.log"}
     logs = {"fr_0004": "//16-9//decoded//20_09_23__16_35_53_SD.log",
             "fr_0015": "//23-6//decoded//20_06_30__16_49_48_SD.log"}
 
     fr_0015_rough_spins = [(423, 451), (484, 511), (568, 574), (595, 600), (649, 656), (703, 733), (767, 790)]
     fr_0004_rough_spins = [(905, 928), (952, 982), (1020, 1043), (1086, 1115), (1173, 1177), (1196, 1217)]
     # plot_spins(path_to_logs + logs["fr_0004"], fr_0004_rough_spins)  # check timings
-    spin_n = None
+    spin_n = 1
     spin04 = True
-    spin15 = True
+    spin15 = False
     if spin_n is not None and spin04:
-        plot_spin(path_to_logs + logs["fr_0004"], fr_0004_rough_spins[spin_n - 1], num=spin_n)
+        plot_spin(path_to_logs + logs["fr_0004"], fr_0004_rough_spins[spin_n - 1], fig_name=spin_n)
     if spin_n is not None and spin15:
-        plot_spin(path_to_logs + logs["fr_0015"], fr_0015_rough_spins[spin_n - 1], num=spin_n)
+        plot_spin(path_to_logs + logs["fr_0015"], fr_0015_rough_spins[spin_n - 1], fig_name=spin_n)
     # ========= Spin analysis 16-9 ===============
-
+    plt.show()
+    quit()
     # --- Spin 1 ---
     spin1_init = (909, 912)
     spin1_stable_period1 = (912, 915)
@@ -57,10 +59,10 @@ if __name__ == "__main__":
 
     if (spin_n is None or spin_n == 3) and spin04:
         pass
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_stable_1, fig_name="Stable 1 S3")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_stable_2, fig_name="Stable 2 S3")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_elevon_1, fig_name="Elevon 1 S3")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_elevon_2, fig_name="Elevon 2 S3")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_stable_1, fig_name="16-9 Spin 3 No Elevon")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_stable_2, fig_name="16-9 Spin 3 No Elevon")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_elevon_1, fig_name="16-9 Spin 3 Elevon Active")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin3_elevon_2, fig_name="16-9 Spin 3 Elevon Active")
 
     # --- Spin 4 ---
     spin4_unstable_defl = (1096, 1099)
@@ -84,10 +86,10 @@ if __name__ == "__main__":
     if (spin_n is None or spin_n == 6) and spin04:
         pass
         # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_stable_1, max_spins=6, fig_name="Stable 1 S6")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_stable_2, max_spins=6, fig_name="Stable 2 S6")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_stable_3, max_spins=6, fig_name="Stable 3 S6")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_elevon_1, max_spins=6, fig_name="Elevon 1 S6")
-        # plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_elevon_2, max_spins=6, fig_name="Elevon 2 S6")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_stable_2, max_spins=6, fig_name="16-9 Spin 6 No Elevon")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_stable_3, max_spins=6, fig_name="16-9 Spin 6 No Elevon")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_elevon_1, max_spins=6, fig_name="16-9 Spin 6 Elevon Active")
+        plot_spin_analysis(path_to_logs + logs["fr_0004"], spin6_elevon_2, max_spins=6, fig_name="16-9 Spin 6 Elevon Active")
 
     # Data from 23-6 for comparison
     # -- Spin 1 --

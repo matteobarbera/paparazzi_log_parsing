@@ -17,15 +17,15 @@ if __name__ == "__main__":
 
     # doesn't take translation of IMU into account
     # gps data logged 4 times slower than attitude
-    # for i, t in enumerate(fr_0004_spins):
-    #     plot_axis_projection(path_to_logs + logs["fr_0004"], t, fig_name=f"S{i + 1}F04 Proj")
-    # for i, t in enumerate(fr_0015_spins):
-    #     plot_axis_projection(path_to_logs + logs["fr_0015"], t, fig_name=f"S{i + 1}F15 Proj")
+    for i, t in enumerate(fr_0004_spins):
+        plot_axis_projection(path_to_logs + logs["fr_0004"], t, fig_name=f"S{i + 1}F04 Proj")
+    for i, t in enumerate(fr_0015_spins):
+        plot_axis_projection(path_to_logs + logs["fr_0015"], t, fig_name=f"S{i + 1}F15 Proj")
 
     # for i, t in enumerate(fr_0004_rough_spins):
     #     plot_spin(path_to_logs + logs["fr_0004"], t, fig_name=f"S{i + 1}F04 Overview")
-    for i, t in enumerate(fr_0015_rough_spins):
-        plot_spin(path_to_logs + logs["fr_0015"], t, fig_name=f"S{i + 1}F15 Overview")
+    # for i, t in enumerate(fr_0015_rough_spins):
+    #     plot_spin(path_to_logs + logs["fr_0015"], t, fig_name=f"S{i + 1}F15 Overview")
     # plt.show()
 
     # TODO

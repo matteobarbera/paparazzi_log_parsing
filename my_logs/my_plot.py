@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 
 from parselog import parselog
 from spin_plot_tools import extract_spin_data, savefig_decorator
+import log_names
 
 
 def main_plot(filename):
@@ -15,14 +16,14 @@ def main_plot(filename):
     # print(log_data.msgs.telemetry.GPS.fields.speed.unit)
     # print(ac_data.GPS.keys()); quit()
 
-    # gt, _, gp_alt, _, gq_alt, _, gr_alt = ac_data.IMU_GYRO.values()
-    # plt.figure("Gyro")
-    # plt.plot(gt, gp_alt, label='gp')
-    # plt.plot(gt, gq_alt, label='gq')
-    # plt.plot(gt, gr_alt, label='gr')
-    # plt.xlabel("Time [s]")
-    # plt.ylabel("Rotation [deg/s]")
-    # plt.legend(loc=1)
+    gt, _, gp_alt, _, gq_alt, _, gr_alt = ac_data.IMU_GYRO.values()
+    plt.figure("Gyro")
+    plt.plot(gt, gp_alt, label='gp')
+    plt.plot(gt, gq_alt, label='gq')
+    plt.plot(gt, gr_alt, label='gr')
+    plt.xlabel("Time [s]")
+    plt.ylabel("Rotation [deg/s]")
+    plt.legend(loc=1)
     #
     act_t = ac_data.ACTUATORS.timestamp
     act_v = ac_data.ACTUATORS.values[:, :4]
@@ -59,14 +60,14 @@ def main_plot(filename):
     # plt.xlabel("Time [s]")
     # plt.ylabel("Altitude [m]")
     #
-    # imu_t, imu_ax, imu_ay, imu_az = ac_data.IMU_ACCEL.values()
-    # plt.figure("IMU Accelerations")
-    # plt.plot(imu_t, imu_ax, label='ax')
-    # plt.plot(imu_t, imu_ay, label='ay')
-    # plt.plot(imu_t, imu_az, label='az')
-    # plt.xlabel("Time [s]")
-    # plt.ylabel("Acceleration [m/s^2]")
-    # plt.legend()
+    imu_t, imu_ax, imu_ay, imu_az = ac_data.IMU_ACCEL.values()
+    plt.figure("IMU Accelerations")
+    plt.plot(imu_t, imu_ax, label='ax')
+    plt.plot(imu_t, imu_ay, label='ay')
+    plt.plot(imu_t, imu_az, label='az')
+    plt.xlabel("Time [s]")
+    plt.ylabel("Acceleration [m/s^2]")
+    plt.legend()
 
     att_t = ac_data.ATTITUDE.timestamp
     att_phi = ac_data.ATTITUDE.phi
@@ -161,8 +162,17 @@ def plot_spin(filename: str, interval: tuple, fig_name=''):
     axs[3, 0].set(xlabel="Time [s]", ylabel="Altitude [m]")
     axs[3, 0].grid(which='both')
 
-    axs[0, 1].plot(gps_t[gps_mask], gps_spd[gps_mask])
-    axs[0, 1].set(xlabel="Time [s]", ylabel="2D Speed [m/s]")
+    mag_t = ac_data.IMU_MAG.timestamp
+    mag_mx = ac_data.IMU_MAG.mx
+    mag_my = ac_data.IMU_MAG.my
+    mag_mz = ac_data.IMU_MAG.mz
+    mag_mask = (mag_t > s_start) & (mag_t < s_end)
+    print(ac_data.IMU_MAG.keys())
+
+    axs[0, 1].plot(mag_t[mag_mask], mag_mx[mag_mask])
+    axs[0, 1].plot(mag_t[mag_mask], mag_my[mag_mask])
+    axs[0, 1].plot(mag_t[mag_mask], mag_mz[mag_mask])
+    axs[0, 1].set(xlabel="Time [s]", ylabel="Mag")
     axs[0, 1].grid(which='both')
 
     imu_t, imu_ax, imu_ay, imu_az = ac_data.IMU_ACCEL.values()
@@ -304,12 +314,9 @@ def plot_spins(filename: str, intervals: List[tuple]):
 
 
 if __name__ == "__main__":
-    path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs//16-9//decoded//"
-    # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log",
-    #         "fr_0016": "20_06_30__17_18_44_SD.log"}
-    logs = {"fr_0004": "20_09_23__16_35_53_SD.log"}
-
-    # main_plot(path_to_logs + logs["fr_0004"])
+    main_plot(log_names.logs["fr_0016"])
+    plt.show()
+    quit()
 
     # 23-6
     fr_0009_spins = [(813, 826), (854, 860), (1015, 1029), (1062, 1078), (1130, 1157), (1199, 1222)]
@@ -317,13 +324,19 @@ if __name__ == "__main__":
     fr_0016_spins = [(354, 370)]
 
     # for i in range(len(fr_0009_spins)):
-    #     plot_spin(path_to_logs + logs["fr_0009"], fr_0009_spins[i], num=i+1)
+    #     plot_spin(path_to_logs + logs["fr_0009"], fr_0009_spins[i])
+
+    # for i in range(len(fr_0015_spins)):
+    #     plot_spin(path_to_logs + logs["fr_0015"], fr_0015_spins[i])
+
+    # for i in range(len(fr_0016_spins)):
+    #     plot_spin(path_to_logs + logs["fr_0016"], fr_0016_spins[i])
 
     # 16-9
     fr_0004_spins = [(905, 928), (952, 982), (1020, 1043), (1086, 1115), (1173, 1177), (1196, 1217)]
 
     # for i in range(len(fr_0004_spins)):
-    #     plot_spin(path_to_logs + logs["fr_0004"], fr_0004_spins[i], num=1+i)
+    #     plot_spin(path_to_logs + logs["fr_0004"], fr_0004_spins[i])
 
     # plot_spins(path_to_logs + logs["fr_0004"], fr_0004_spins)
 
