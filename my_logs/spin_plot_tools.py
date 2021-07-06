@@ -4,7 +4,7 @@ from functools import wraps
 import numpy as np
 from matplotlib import pyplot as plt
 
-from parselog import parselog
+from parselog import parselog, AttrDict
 
 
 def extract_spin_data(filename: str, interval: tuple, *, single_revs=True, data_fields=None):
@@ -85,6 +85,258 @@ def savefig_decorator(fname=None):
         return wrapper
 
     return decorator
+
+
+def plot_gyro(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    gt, _, gp_alt, _, gq_alt, _, gr_alt = ac_data.IMU_GYRO.values()
+    if interval is None:
+        s_start = gt[0]
+        s_end = gt[-1]
+    else:
+        s_start, s_end = interval
+
+    gyro_mask = (gt > s_start) & (gt < s_end)
+    ax.plot(gt[gyro_mask], gp_alt[gyro_mask], label='gp')
+    ax.plot(gt[gyro_mask], gq_alt[gyro_mask], label='gq')
+    ax.plot(gt[gyro_mask], gr_alt[gyro_mask], label='gr', zorder=1)
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Rotation [deg/s]")
+    ax.legend(loc=1)
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_actuators(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    act_t = ac_data.ACTUATORS.timestamp
+    if interval is None:
+        s_start = act_t[0]
+        s_end = act_t[-1]
+    else:
+        s_start, s_end = interval
+
+    act_0 = ac_data.ACTUATORS.values[:, 0]
+    act_1 = ac_data.ACTUATORS.values[:, 1]
+    act_2 = ac_data.ACTUATORS.values[:, 2]
+    act_3 = ac_data.ACTUATORS.values[:, 3]
+
+    act_mask = (act_t > s_start) & (act_t < s_end)
+
+    ax.plot(act_t[act_mask], act_0[act_mask], label="thr l")
+    ax.plot(act_t[act_mask], act_1[act_mask], label="ele l")
+    ax.plot(act_t[act_mask], act_2[act_mask], label="ele r")
+    ax.plot(act_t[act_mask], act_3[act_mask], label="thr r")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("PWM value")
+    ax.legend(loc=1)
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_magnetometer(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    mag_t = ac_data.IMU_MAG.timestamp
+    if interval is None:
+        s_start = mag_t[0]
+        s_end = mag_t[-1]
+    else:
+        s_start, s_end = interval
+
+    mag_mx = ac_data.IMU_MAG.mx
+    mag_my = ac_data.IMU_MAG.my
+    mag_mz = ac_data.IMU_MAG.mz
+    mag_mask = (mag_t > s_start) & (mag_t < s_end)
+
+    ax.plot(mag_t[mag_mask], mag_mx[mag_mask])
+    ax.plot(mag_t[mag_mask], mag_my[mag_mask])
+    ax.plot(mag_t[mag_mask], mag_mz[mag_mask])
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Mag")
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_accelerometer(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    imu_t, imu_ax, imu_ay, imu_az = ac_data.IMU_ACCEL.values()
+    if interval is None:
+        s_start = imu_t[0]
+        s_end = imu_t[-1]
+    else:
+        s_start, s_end = interval
+
+    imu_mask = (imu_t > s_start) & (imu_t < s_end)
+    ax.plot(imu_t[imu_mask], imu_ax[imu_mask], label='ax')
+    ax.plot(imu_t[imu_mask], imu_ay[imu_mask], label='ay')
+    ax.plot(imu_t[imu_mask], imu_az[imu_mask], label='az')
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Acceleration [m/s^2]")
+    ax.legend()
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_attitude(ac_data: AttrDict, ax=None, *, interval: tuple = None, plot_psi: bool = False):
+    if ax is None:
+        ax = plt.gca()
+
+    att_t = ac_data.ATTITUDE.timestamp
+    if interval is None:
+        s_start = att_t[0]
+        s_end = att_t[-1]
+    else:
+        s_start, s_end = interval
+
+    att_phi = ac_data.ATTITUDE.phi
+    att_theta = ac_data.ATTITUDE.theta
+    att_psi = ac_data.ATTITUDE.psi
+    att_mask = (att_t > s_start) & (att_t < s_end)
+
+    ax.plot(att_t[att_mask], np.rad2deg(att_phi)[att_mask], label="phi")
+    ax.plot(att_t[att_mask], np.rad2deg(att_theta)[att_mask], label="theta")
+    if plot_psi:
+        ax.plot(att_t[att_mask], np.rad2deg(att_psi)[att_mask], label="psi")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Angle [deg]")
+    ax.legend()
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_gps_climb(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    gps_t = ac_data.GPS.timestamp
+    if interval is None:
+        s_start = gps_t[0]
+        s_end = gps_t[-1]
+    else:
+        s_start, s_end = interval
+
+    gps_cl = ac_data.GPS.climb * 0.01  # to m/s
+    gps_mask = (gps_t > s_start) & (gps_t < s_end)
+    ax.plot(gps_t[gps_mask], gps_cl[gps_mask])
+    ax.set(xlabel="Time [s]", ylabel="Climb rate [m/s]")
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_gps_altitude(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    gps_t = ac_data.GPS.timestamp
+    if interval is None:
+        s_start = gps_t[0]
+        s_end = gps_t[-1]
+    else:
+        s_start, s_end = interval
+
+    gps_alt = ac_data.GPS.alt * 0.001  # to m
+    gps_mask = (gps_t > s_start) & (gps_t < s_end)
+    ax.plot(gps_t[gps_mask], gps_alt[gps_mask])
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Altitude [m]")
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_gps_speed(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    gps_t = ac_data.GPS.timestamp
+    if interval is None:
+        s_start = gps_t[0]
+        s_end = gps_t[-1]
+    else:
+        s_start, s_end = interval
+
+    gps_spd = ac_data["GPS"]["speed"] * 0.01  # to m/s
+    gps_mask = (gps_t > s_start) & (gps_t < s_end)
+    ax.plot(gps_t[gps_mask], gps_spd[gps_mask])
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Altitude [m]")
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_rc(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    rc_t = ac_data.RC.timestamp
+    if interval is None:
+        s_start = rc_t[0]
+        s_end = rc_t[-1]
+    else:
+        s_start, s_end = interval
+
+    rc_thr = ac_data.RC.values[:, 0]
+    rc_roll = ac_data.RC.values[:, 1]
+    rc_pitch = ac_data.RC.values[:, 2]
+    rc_yaw = ac_data.RC.values[:, 3]
+    rc_aux2 = ac_data.RC.values[:, 6]
+    rc_mask = (rc_t > s_start) & (rc_t < s_end)
+    ax.plot(rc_t[rc_mask], rc_thr[rc_mask], label="thr")
+    ax.plot(rc_t[rc_mask], rc_roll[rc_mask], label="roll")
+    ax.plot(rc_t[rc_mask], rc_pitch[rc_mask], label="pitch")
+    ax.plot(rc_t[rc_mask], rc_yaw[rc_mask], label="yaw")
+    ax.plot(rc_t[rc_mask], rc_aux2[rc_mask], label="aux2")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Channel value")
+    ax.legend()
+    ax.grid(which='both')
+
+    return ax
+
+
+def plot_commands(ac_data: AttrDict, ax=None, *, interval: tuple = None):
+    if ax is None:
+        ax = plt.gca()
+
+    comm_t = ac_data["COMMANDS"]["timestamp"]
+    if interval is None:
+        s_start = comm_t[0]
+        s_end = comm_t[-1]
+    else:
+        s_start, s_end = interval
+
+    comm_thr = ac_data["COMMANDS"]["values"][:, 0]
+    comm_roll = ac_data["COMMANDS"]["values"][:, 1]
+    comm_pitch = ac_data["COMMANDS"]["values"][:, 2]
+    comm_yaw = ac_data["COMMANDS"]["values"][:, 3]
+    comm_fs = ac_data["COMMANDS"]["values"][:, 4]
+    comm_mask = (comm_t > s_start) & (comm_t < s_end)
+
+    ax.plot(comm_t[comm_mask], comm_thr[comm_mask], label="thr")
+    ax.plot(comm_t[comm_mask], comm_roll[comm_mask], label="roll")
+    ax.plot(comm_t[comm_mask], comm_pitch[comm_mask], label="pitch")
+    ax.plot(comm_t[comm_mask], comm_yaw[comm_mask], label="yaw")
+    ax.plot(comm_t[comm_mask], comm_fs[comm_mask], label="fs_landing")
+    ax.grid(which='both')
+    ax.set(xlabel="Time [s]", ylabel="Commands value")
+    ax.legend()
+
+    return ax
 
 
 def plot_gq_gp_vs_psi(filename: str, interval: tuple, *, max_spins: int = 6, fig_name=None):

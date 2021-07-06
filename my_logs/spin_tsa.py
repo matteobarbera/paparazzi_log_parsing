@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, ifft, fftshift, ifftshift
 from scipy.signal import butter, filtfilt
 
+import log_names
 from spin_plot_tools import extract_spin_data, get_rev_intervals
 
 
@@ -106,10 +107,10 @@ def tsa(time_series, max_n=8):
 
 
 if __name__ == "__main__":
-    path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs"
-    # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log"}
-    logs = {"fr_0004": "//16-9//decoded//20_09_23__16_35_53_SD.log",
-            "fr_0015": "//23-6//decoded//20_06_30__16_49_48_SD.log"}
+    # path_to_logs = "//home//matteo//Documents//MSc//Thesis//logs"
+    # # logs = {"fr_0009": "20_06_30__14_59_00_SD.log", "fr_0015": "20_06_30__16_49_48_SD.log"}
+    # logs = {"fr_0004": "//16-9//decoded//20_09_23__16_35_53_SD.log",
+    #         "fr_0015": "//23-6//decoded//20_06_30__16_49_48_SD.log"}
 
     fr_0015_rough_spins = [(423, 451), (484, 511), (568, 574), (595, 600), (649, 656), (703, 733), (767, 790)]
     fr_0004_rough_spins = [(905, 928), (952, 982), (1020, 1043), (1086, 1115), (1173, 1177), (1196, 1217)]
@@ -119,4 +120,4 @@ if __name__ == "__main__":
     fr_0004_spins = [(912, 919), (960, 977), (1028, 1036), (1093, 1108), (1204, 1212)]
     fr_0015_spins = [(427, 449), (488, 519), (707, 731), (772, 787)]
 
-    my_tsa(path_to_logs + logs["fr_0004"], fr_0004_spins[0])
+    my_tsa(log_names.logs["fr_0004"], fr_0004_spins[0])
